@@ -24,6 +24,7 @@
 - Os tempos mostrados são apenas do arquivo de 1 bilhão
 - Os códigos serão versionados entre as mudças(só porque quero testar tags)
 - Serão dois teste um no meu laptop e outra no meu computador
+- A medição de tempo é feita pelo próprio programa comparando a hora que inicia e que termina
 
 ### versões 
 
@@ -57,3 +58,7 @@
 
 - Decisões:
     Usar um cicionário para agiizar o acesso ao dados e evitar ter que criar um novo objeto para cada linhas
+
+- Tempo:
+    Laptop:
+    PC:
