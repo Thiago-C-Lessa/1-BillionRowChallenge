@@ -26,3 +26,34 @@
 - Serão dois teste um no meu laptop e outra no meu computador
 
 ### versões
+
+#### v0.1 
+- Leitura do Arquivo:
+
+    O arquivo é aberto e lido linha por linha usando um scanner.
+    Cada linha é dividida em duas partes: o nome da cidade e o valor da temperatura (convertido para float64).
+
+- Processamento dos Dados:
+
+    Um mapa (observatorios) é usado para armazenar os dados de cada cidade.
+    Para cada linha:
+        Se a cidade já existe no mapa:
+            O contador de medições é incrementado.
+            Os valores de temperatura mínima e máxima são atualizados, se necessário.
+            O somatório das temperaturas é incrementado.
+        Se a cidade ainda não existe no mapa:
+            Ela é adicionada ao mapa com os valores iniciais.
+            O nome da cidade é adicionado a um slice (cidades) para manter a ordem.
+
+- Ordenação:
+
+    Após o processamento, o slice cidades é ordenado alfabeticamente para exibir os resultados em ordem.
+
+- Exibição dos Resultados:
+
+    Para cada cidade no slice ordenado:
+        As estatísticas calculadas (mínima, média e máxima) são exibidas em formato tabular.
+        O tempo total de execução é exibido ao final.
+
+- Decisões:
+    Usar um cicionário para agiizar o acesso ao dados e evitar ter que criar um novo objeto para cada linhas
