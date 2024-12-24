@@ -25,9 +25,9 @@
 - Os códigos serão versionados entre as mudças(só porque quero testar tags)
 - Serão dois teste um no meu laptop e outra no meu computador
 
-### versões
+### versões 
 
-#### v0.1 
+### v0.1 
 - Leitura do Arquivo:
 
     O arquivo é aberto e lido linha por linha usando um scanner.
