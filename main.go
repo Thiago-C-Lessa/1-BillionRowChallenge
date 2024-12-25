@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"sync"
 )
 
 type Dado struct{
@@ -19,29 +20,38 @@ type Dado struct{
 	Somatorio float64
 }
 
-func processarArquivo(_caminho string) (map[string]Dado, []string, error){
-	file, err := os.Open(_caminho)
+
+func lerAqr(_CAMINHO_ string, dataChan chan string, wg *sync.WaitGroup){
+	defer wg.Done()
+
+	file, err := os.Open(_CAMINHO_)
     if err != nil {
         log.Fatal(err)
     }
 	defer file.Close()
 
-	observatorios := make(map[string]Dado)
-	// array com os nomes das cidades
-	//depois ordena
-	var cidades []string
-
 	scanner := bufio.NewScanner(file);
 	for scanner.Scan(){
 		linha := scanner.Text()
+		dataChan <- linha
+	}
+	close(dataChan)
+}
+
+//maps são passados por referência não precisa de ponteiros
+func processarArq(dataChan chan string, wg *sync.WaitGroup, result map[string]Dado, cidadesOrdenadas *[]string, /*mu *sync.Mutex, contador *int64*/){
+	defer wg.Done()
+	// array com os nomes das cidades
+	//depois ordena
+	//mu.Lock()
+	for linha := range dataChan{
 		partes := strings.Split(linha,";")
 		f,err := strconv.ParseFloat(partes[1],32)
 		if err != nil{
 			log.Panic(err)
 		}
-
 		//verifica se cidade já existe
-		dado, jaTem := observatorios[partes[0]]
+		dado, jaTem := result[partes[0]]
 		if jaTem {
 			dado.Counter = dado.Counter+1
 			//faz verificações min max
@@ -53,7 +63,7 @@ func processarArquivo(_caminho string) (map[string]Dado, []string, error){
 			}
 			dado.Somatorio = dado.Somatorio + f
 		} else {
-			cidades = append(cidades, partes[0])
+			(*cidadesOrdenadas) = append((*cidadesOrdenadas), partes[0])
 			dado = Dado{
 				Nome: partes[0],
 				Counter: 1,
@@ -62,32 +72,43 @@ func processarArquivo(_caminho string) (map[string]Dado, []string, error){
 				Somatorio: dado.Somatorio + f,
 			}
 		}
-		observatorios[partes[0]] = dado
+		result[partes[0]] = dado
+		//(*contador) = (*contador)+1
+		//fmt.Println((*contador))
+		//mu.Unlock()
 	}
 
-	sort.Strings(cidades)
-	return observatorios, cidades, scanner.Err()
+
+	
 }
 
 func main(){
 	inicio := time.Now()
+	var CAMINHO string = "./arqs/measurements1B.txt"
+	observatoriosResult := make(map[string]Dado)
+	var wg sync.WaitGroup
+	//var mu sync.Mutex
+	canal := make(chan string,100)
+	var cidades []string
+	//var quantos int64 = 0
 
-	var caminho string = "./arqs/measurements1M.txt"
-	// abre o arquivo 
+	wg.Add(1)
+	go lerAqr(CAMINHO,canal,&wg)
 
-	observatorios, cidades, err := processarArquivo(caminho)
-	if err != nil{
-		log.Panic(err)
-	}
+	wg.Add(1)
+	go processarArq(canal,&wg,observatoriosResult,&cidades/*,mu,&quantos*/)
 
-	
+// faz com que espere as routines
+	wg.Wait()
+		
+	sort.Strings(cidades)
 
 	println("|  CIDADE  |  MIN  |  MED  |  MAX  |")
 	fmt.Println("|----------|-------|-------|-------|")
 
 
 	for _, cidadeNome :=  range cidades{
-		cidade := observatorios[cidadeNome]
+		cidade := observatoriosResult[cidadeNome]
 		fmt.Printf("| %s | %.1fc | %.1fc | %.1fc |\n",
 		cidade.Nome,
 		cidade.Min,
@@ -96,7 +117,6 @@ func main(){
 	}
 
 
-	duration := time.Since(inicio)
 	//tempo de execução
-	fmt.Printf("\nTempo de execução: %s\n", duration)
+	fmt.Printf("\nTempo de execução: %s\n", time.Since(inicio)/*,quantos*/)
 }
