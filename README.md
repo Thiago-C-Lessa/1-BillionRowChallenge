@@ -61,4 +61,4 @@
 
 - Tempo:
     Laptop: Após três execuções o tempo médio foi de:3m36.1439s
-    PC:
+    PC: 2m31.8767
