@@ -74,7 +74,7 @@
 
 - Processamento dos Dados:
 
-    Uma go routine de leitura
+    Uma go routine de processamento
 
 - Tempo:
     Laptop: Após três execuções o tempo médio foi de: 12m20.2391s
@@ -91,7 +91,7 @@
 
 - Processamento dos Dados:
 
-    64 go routines de leitura
+    64 go routines de processamento
 
 - Tempo:
     Laptop: Após três execuções o tempo médio foi de: a verificar
