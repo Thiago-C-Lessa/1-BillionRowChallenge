@@ -60,5 +60,5 @@
     Usar um cicionário para agiizar o acesso ao dados e evitar ter que criar um novo objeto para cada linhas
 
 - Tempo:
-    Laptop: Após três execuções o tempo médio foi de:3m36.1439s
-    PC: 2m31.8767
+    Laptop: Após três execuções o tempo médio foi de: 3m36.1439s
+    PC Após três execuções o tempo médio foi de: 2m31.8767
