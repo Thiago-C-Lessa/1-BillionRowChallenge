@@ -33,7 +33,7 @@ func readAqr(_CAMINHO_ string, dataChan chan []byte, wg *sync.WaitGroup) {
 	defer file.Close()
 
 	bufferSize := 64 * 1024 // 64kb
-	buffer := make([]byte, bufferSize) 
+	buffer := make([]byte, bufferSize)
 
 	for {
 		//faz uma leitura unica
@@ -68,23 +68,23 @@ func readAqr(_CAMINHO_ string, dataChan chan []byte, wg *sync.WaitGroup) {
 func processArq(dataChan chan []byte, wg *sync.WaitGroup, result map[string]Dado, cidadesOrdenadas *[]string) {
 	defer wg.Done()
 	var partialLine string // Armazena linhas incompletas entre chunks
-	
+
 
 	for chunk := range dataChan {
 		lines := string(chunk)
-		
-		
+
+
 		for _,chunk := range lines{
-			
+
 			switch chunk {
 			case '\r':
 				continue
 			case '\n':
 				partes := strings.Split(partialLine, ";")
-				
+
 				cidade := partes[0]
 				valorStr := partes[1]
-			
+
 				// Tentar converter o valor para float
 				valor, err := strconv.ParseFloat(valorStr, 64)
 				if err != nil {
@@ -92,7 +92,7 @@ func processArq(dataChan chan []byte, wg *sync.WaitGroup, result map[string]Dado
 					log.Panic("erro na conversão de float")
 					break
 				}
-			
+
 				// Processar a cidade e o valor
 				dado, jaTem := result[cidade]
 				if jaTem {
@@ -163,6 +163,7 @@ func main() {
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"log"
@@ -183,15 +184,14 @@ type Dado struct {
 }
 
 const (
-	NUM_WORKERS = 64  // Número de threads de processamento
-	BUFFER_SIZE = 64 * 1024 // 64 KB por leitura
+	NUM_WORKERS = 128        // Número de threads de processamento
+	BUFFER_SIZE = 64 * 1024 * 1024 // 64 MB por leitura
 )
 
 func readAqr(_CAMINHO_ string, dataChan chan []byte, wg *sync.WaitGroup) {
 	defer wg.Done()
 	defer close(dataChan)
 	//defer close(dataChan)
-	var counter int64 = 0;
 
 	file, err := os.Open(_CAMINHO_)
 	if err != nil {
@@ -200,18 +200,26 @@ func readAqr(_CAMINHO_ string, dataChan chan []byte, wg *sync.WaitGroup) {
 	defer file.Close()
 
 	bufferSize := 64 * 1024 // 64kb
-	buffer := make([]byte, bufferSize) 
+	buffer := make([]byte, bufferSize)
+	var leftOver []byte
 
 	for {
 		//faz uma leitura unica
 		n, err := file.Read(buffer)
 		if n > 0 {
-			counter++
-			//coppia para o buffer por questao de integridade
-			// o erro que estava dando era por causa disso
-			dataCopy := make([]byte, n)
-			copy(dataCopy, buffer[:n])
-			dataChan <- dataCopy
+			leftOver = append(leftOver, buffer...)
+
+			i := bytes.LastIndexByte(leftOver, '\n')
+
+			if i == -1 {
+				continue // Se não encontrou '\n', continue lendo mais dados
+			}
+
+			dataCopy := make([]byte, i) //make([]byte, n)
+			copy(dataCopy, leftOver[:i])
+			dataChan <- dataCopy				// o erro que estava dando era por causa disso
+
+			leftOver = append([]byte{}, leftOver[i:]...)
 
 			//if len(dataChan) == cap(dataChan){
 			//	fmt.Printf("Buffer Cheio, na leitura número: %v\n",counter)
@@ -230,59 +238,50 @@ func readAqr(_CAMINHO_ string, dataChan chan []byte, wg *sync.WaitGroup) {
 	}
 }
 
-
 func processArq(dataChan chan []byte, wg *sync.WaitGroup, resultChan chan map[string]Dado) {
 	defer wg.Done()
 	result := make(map[string]Dado)
 
 	for chunk := range dataChan {
 		lines := string(chunk)
-		var partialLine string
+		lines = strings.ReplaceAll(lines, "\r", "")
+		strs := strings.Split(lines, "\n")
 
-		for _, char := range lines {
-			switch char {
-			case '\r':
+		for _, lins := range strs {
+			partes := strings.Split(lins, ";")
+			if len(partes) < 2 {
 				continue
-			case '\n':
-				partes := strings.Split(partialLine, ";")
-				if len(partes) < 2 {
-					continue
-				}
-
-				cidade := partes[0]
-				valorStr := partes[1]
-
-				valor, err := strconv.ParseFloat(valorStr, 64)
-				if err != nil {
-					log.Printf("Erro ao converter valor: %q, erro: %v\n", valorStr, err)
-					continue
-				}
-
-				dado, existe := result[cidade]
-				if existe {
-					dado.Somatorio += valor
-					dado.Counter++
-					if dado.Max < valor {
-						dado.Max = valor
-					}
-					if dado.Min > valor {
-						dado.Min = valor
-					}
-				} else {
-					dado = Dado{
-						Nome:      cidade,
-						Counter:   1,
-						Max:       valor,
-						Min:       valor,
-						Somatorio: valor,
-					}
-				}
-				result[cidade] = dado
-				partialLine = ""
-
-			default:
-				partialLine += string(char)
 			}
+
+			cidade := partes[0]
+			valorStr := partes[1]
+
+			valor, err := strconv.ParseFloat(valorStr, 64)
+			if err != nil {
+				log.Printf("Erro ao converter valor: %q, erro: %v\n", valorStr, err)
+				continue
+			}
+
+			dado, existe := result[cidade]
+			if existe {
+				dado.Somatorio += valor
+				dado.Counter++
+				if dado.Max < valor {
+					dado.Max = valor
+				}
+				if dado.Min > valor {
+					dado.Min = valor
+				}
+			} else {
+				dado = Dado{
+					Nome:      cidade,
+					Counter:   1,
+					Max:       valor,
+					Min:       valor,
+					Somatorio: valor,
+				}
+			}
+			result[cidade] = dado
 		}
 	}
 	resultChan <- result
@@ -319,9 +318,8 @@ func main() {
 
 	var wg sync.WaitGroup
 
-
 	wg.Add(1)
-	go readAqr(CAMINHO, dataChan, &wg)// uma leitura já é bem rápidinho, em geral o canal fica cheio pq não foi consumido
+	go readAqr(CAMINHO, dataChan, &wg) // uma leitura já é bem rápidinho, em geral o canal fica cheio pq não foi consumido
 
 	// Criando múltiplas goroutines para processamento
 	for i := 0; i < NUM_WORKERS; i++ {
