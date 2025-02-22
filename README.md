@@ -63,7 +63,7 @@
     Laptop: Após três execuções o tempo médio foi de: 3m36.1439s
     PC Após três execuções o tempo médio foi de: 2m31.8767
 
-### v0.2 
+### v0.2 (integridade de leitura garantida)
 - Mudanças:
 
   Uso de goroutines porém apenas uma para cada função
@@ -74,28 +74,28 @@
 
 - Processamento dos Dados:
 
-    Uma go routine de processamento
+    Uma go routine de processamento que armazena o resto da linha para a proxima iteração
 
 - Tempo:
     Laptop: Após três execuções o tempo médio foi de: 12m20.2391s
     PC Após três execuções o tempo médio foi de: 8m31.4562s
 
-### v0.2.1 
+### v0.2.2 (integridade de leitura garantida)
+
 - Mudanças:
 
   Uso de goroutines com multíplos leitores
   
 - Leitura do Arquivo:
 
-  Uma go routine de leirura
+  Uma go routine de leirura lendo 64 MB, garantindo integridade das linhas enviando blocos terminados em "\n"
 
 - Processamento dos Dados:
 
-    64 go routines de processamento
+    128 go routines de processamento
 
 - Tempo:
     Laptop: Após três execuções o tempo médio foi de: a verificar
-    PC Após três execuções o tempo médio foi de: 1m29.6823
-
+    PC Após três execuções o tempo médio foi de: 0m19.2594s
   
 
